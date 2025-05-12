@@ -18,6 +18,8 @@ public class ExchangedDetails{
 
     private Long exchangedPNRNumber;
 
+    public ExchangedDetails() {
+    }
 
     public ExchangedDetails(Long successfulExchangeId) {
         this.successfulExchangeId = successfulExchangeId;

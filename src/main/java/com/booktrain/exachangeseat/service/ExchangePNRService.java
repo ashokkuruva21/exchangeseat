@@ -1,7 +1,6 @@
 package com.booktrain.exachangeseat.service;
 
 import com.booktrain.exachangeseat.dto.PNRRequestDAO;
-import com.booktrain.exachangeseat.entity.Bookings;
 import com.booktrain.exachangeseat.entity.ExchangePNR;
 import com.booktrain.exachangeseat.entity.ExchangedDetails;
 import com.booktrain.exachangeseat.entity.PNRRecord;
@@ -13,11 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.plaf.PanelUI;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Service
 public class ExchangePNRService {
@@ -44,7 +43,7 @@ public class ExchangePNRService {
         }
 
         ExchangePNR exchangePNR = new ExchangePNR();
-        exchangePNR.setRequestedPNR(pnrNumber);
+        exchangePNR.setRequestedPNRNumber(pnrNumber);
         exchangePNR.setExchangeStatus("REQUESTED");
         return exchangePNRRepository.save(exchangePNR);
     }
@@ -55,7 +54,7 @@ public class ExchangePNRService {
         List<ExchangePNR> allRecords = exchangePNRRepository.findAll();
 
         for(ExchangePNR exchangePNR:allRecords){
-            Long requestedPNR = exchangePNR.getRequestedPNR();
+            Long requestedPNR = exchangePNR.getRequestedPNRNumber();
             PNRRecord byPNRNumber = pnrRecordService.getByPNRNumber(requestedPNR);
 
             if(! exchangePNR.getExchangeStatus().equals("EXCHANGED")){
@@ -81,22 +80,22 @@ public class ExchangePNRService {
 
         PNRRecord proposedPNRRecord = pnrRecordService.getByPNRNumber(proposedPNRNumber);
 
-        Optional<ExchangePNR> byRequestedPNR = exchangePNRRepository.getByRequestedPNR(requestedPNRNumber);
+        Optional<ExchangePNR> byRequestedPNR = exchangePNRRepository.getByRequestedPNRNumber(requestedPNRNumber);
         if(byRequestedPNR.isEmpty()){
             throw new ResourceNotFoundException("ExchangePNR data is not present with requestedPNR number "+ requestedPNRNumber);
         }
 
         ExchangePNR exchangePNRRecord = byRequestedPNR.get();
 
-        if(exchangePNRRecord.getProposalPNR()==null){
+        if(exchangePNRRecord.getProposalPNRNumber()==null){
             if(! exchangePNRRecord.getExchangeStatus().equals("EXCHANGED")){
                 exchangePNRRecord.setExchangeStatus("AGREED");
-                exchangePNRRecord.setProposalPNR(proposedPNRNumber);
+                exchangePNRRecord.setProposalPNRNumber(proposedPNRNumber);
             }
         }
         else{
             ExchangePNR exchangePNR = this.requestExchange(requestedPNRNumber);
-            exchangePNR.setProposalPNR(proposedPNRNumber);
+            exchangePNR.setProposalPNRNumber(proposedPNRNumber);
             exchangePNR.setExchangeStatus("AGREED");
             return exchangePNRRepository.save(exchangePNR);
         }
@@ -110,7 +109,7 @@ public class ExchangePNRService {
 
         PNRRecord proposedPNRRecord = pnrRecordService.getByPNRNumber(proposedPNRNumber);
 
-        Optional<ExchangePNR> byRequestedPNRAndProposalPNR = exchangePNRRepository.getByRequestedPNRAndProposalPNR(requestedPNRNumber, proposedPNRNumber);
+        Optional<ExchangePNR> byRequestedPNRAndProposalPNR = exchangePNRRepository.getByRequestedPNRNumberAndProposalPNRNumber(requestedPNRNumber, proposedPNRNumber);
         if(byRequestedPNRAndProposalPNR.isEmpty()){
             throw new ResourceNotFoundException("ExchangePNR record not found with RequestedPNR "+requestedPNRNumber+" and proposedPNR "+proposedPNRNumber);
         }
@@ -128,7 +127,7 @@ public class ExchangePNRService {
 
         PNRRecord proposedPNRRecord = pnrRecordService.getByPNRNumber(proposedPNRNumber);
 
-        Optional<ExchangePNR> byRequestedPNRAndProposalPNR = exchangePNRRepository.getByRequestedPNRAndProposalPNR(requestedPNRNumber, proposedPNRNumber);
+        Optional<ExchangePNR> byRequestedPNRAndProposalPNR = exchangePNRRepository.getByRequestedPNRNumberAndProposalPNRNumber(requestedPNRNumber, proposedPNRNumber);
         if(byRequestedPNRAndProposalPNR.isEmpty()){
             throw new ResourceNotFoundException("ExchangePNR record not found with RequestedPNR "+requestedPNRNumber+" and proposedPNR "+proposedPNRNumber);
         }
@@ -136,7 +135,8 @@ public class ExchangePNRService {
 
         if(exchangePNR.getExchangeStatus().equals("CANCELLED")){
             throw new ExchangeNotPossibleException("Exchange status should be in ACCEPTED state");
-        }  else if(exchangePNR.getExchangeStatus().equals("ACCEPTED")){
+        }
+        else if(exchangePNR.getExchangeStatus().equals("ACCEPTED")){
 
             Short requestedUserTrainNumber = requestedPNRRecord.getBookings().getTrainNumber();
             Short proposedUserTrainNumber = proposedPNRRecord.getBookings().getTrainNumber();
@@ -183,7 +183,7 @@ public class ExchangePNRService {
 
 
 //            System.out.println("Temp before initiating "+tempPNRRecord.getBookings().getCurrentTicketStatus());
-//            System.out.println("obj beofr:" + tempPNRRecord);
+//            System.out.println("obj before:" + tempPNRRecord);
 //
 //            PNRRecord updatedRequestedUserPNRRecord = pnrRecordService.updatePNRRecordForExchange(requestedPNRRecord, proposedPNRRecord);
 //            System.out.println("obj aft:" + tempPNRRecord);
@@ -191,13 +191,23 @@ public class ExchangePNRService {
 //            PNRRecord updatedProposedUserPNRRecord = pnrRecordService.updatePNRRecordForExchange(proposedPNRRecord, tempPNRRecord);
 //            System.out.println("Temp after changing proposer seat "+tempPNRRecord.getBookings().getCurrentTicketStatus());
 //
+            List<ExchangePNR> allByRequestedPNRNumber = exchangePNRRepository.getAllByRequestedPNRNumber(requestedPNRNumber);
+                    for(ExchangePNR exchangePNR1:  allByRequestedPNRNumber){
+                        if (! exchangePNR1.getProposalPNRNumber().equals(proposedPNRNumber)){
+                            exchangePNR1.setExchangeStatus("CANCELLED");
+                        }
+                    }
+            List<ExchangePNR> rejectedExchangePNRS = exchangePNRRepository.saveAll(allByRequestedPNRNumber);
+
             ExchangedDetails exchangedDetails = new ExchangedDetails(requestedPNRRecord.getPNRId(),requestedPNRNumber,proposedPNRNumber);
             exchangedDetailsService.saveSuccessfullyExchangedDetails(exchangedDetails);
 
             exchangePNR.setExchangeStatus("EXCHANGED");
+            return exchangePNRRepository.save(exchangePNR);
         }
+        throw new ExchangeNotPossibleException("Exchange status is not in ACCEPTED status yet!!!");
 
-        return exchangePNRRepository.save(exchangePNR);
+
     }
 
     public ExchangePNR cancelExchange(Long requestedPNRNumber, Long proposedPNRNumber){
@@ -205,7 +215,7 @@ public class ExchangePNRService {
 
         PNRRecord proposedPNRRecord = pnrRecordService.getByPNRNumber(proposedPNRNumber);
 
-        Optional<ExchangePNR> byRequestedPNRAndProposalPNR = exchangePNRRepository.getByRequestedPNRAndProposalPNR(requestedPNRNumber, proposedPNRNumber);
+        Optional<ExchangePNR> byRequestedPNRAndProposalPNR = exchangePNRRepository.getByRequestedPNRNumberAndProposalPNRNumber(requestedPNRNumber, proposedPNRNumber);
         if(byRequestedPNRAndProposalPNR.isEmpty()){
             throw new ResourceNotFoundException("ExchangePNR record not found with RequestedPNR "+requestedPNRNumber+" and proposedPNR "+proposedPNRNumber);
         }

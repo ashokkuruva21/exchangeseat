@@ -13,9 +13,9 @@ public class ExchangePNR {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long exchangedId;
 
-    private Long requestedPNR;
+    private Long requestedPNRNumber;
 
-    private Long proposalPNR;
+    private Long proposalPNRNumber;
 
     //REQUESTED, AGREED, ACCEPTED, EXCHANGED, CANCELLED
     @Pattern(regexp = "^(REQUESTED|AGREED|ACCEPTED|EXCHANGED|CANCELLED)$")
@@ -24,10 +24,10 @@ public class ExchangePNR {
     public ExchangePNR() {
     }
 
-    public ExchangePNR(Long exchangedId, Long requestedPNR, Long proposalPNR, String exchangeStatus) {
+    public ExchangePNR(Long exchangedId, Long requestedPNRNumber, Long proposalPNRNumber, String exchangeStatus) {
         this.exchangedId = exchangedId;
-        this.requestedPNR = requestedPNR;
-        this.proposalPNR = proposalPNR;
+        this.requestedPNRNumber = requestedPNRNumber;
+        this.proposalPNRNumber = proposalPNRNumber;
         this.exchangeStatus = exchangeStatus;
     }
 
@@ -39,20 +39,20 @@ public class ExchangePNR {
         this.exchangedId = exchangedId;
     }
 
-    public Long getRequestedPNR() {
-        return requestedPNR;
+    public Long getRequestedPNRNumber() {
+        return requestedPNRNumber;
     }
 
-    public void setRequestedPNR(Long requestedPNR) {
-        this.requestedPNR = requestedPNR;
+    public void setRequestedPNRNumber(Long requestedPNRNumber) {
+        this.requestedPNRNumber = requestedPNRNumber;
     }
 
-    public Long getProposalPNR() {
-        return proposalPNR;
+    public Long getProposalPNRNumber() {
+        return proposalPNRNumber;
     }
 
-    public void setProposalPNR(Long proposalPNR) {
-        this.proposalPNR = proposalPNR;
+    public void setProposalPNRNumber(Long proposalPNRNumber) {
+        this.proposalPNRNumber = proposalPNRNumber;
     }
 
 
