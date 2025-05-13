@@ -42,6 +42,10 @@ public class ExchangePNRService {
             throw new ResourceNotFoundException("Record not found with PNR Number "+pnrNumber+" !! Please enter valid PNR Number");
         }
 
+        if(exchangePNRRepository.getByRequestedPNRNumber(pnrNumber).isPresent()){
+            throw new ExchangeNotPossibleException("Seat Exchange with PNRNumber "+pnrNumber+" is already requested!!!");
+        }
+
         ExchangePNR exchangePNR = new ExchangePNR();
         exchangePNR.setRequestedPNRNumber(pnrNumber);
         exchangePNR.setExchangeStatus("REQUESTED");
@@ -80,12 +84,43 @@ public class ExchangePNRService {
 
         PNRRecord proposedPNRRecord = pnrRecordService.getByPNRNumber(proposedPNRNumber);
 
-        Optional<ExchangePNR> byRequestedPNR = exchangePNRRepository.getByRequestedPNRNumber(requestedPNRNumber);
-        if(byRequestedPNR.isEmpty()){
+        List<ExchangePNR> allByRequestedPNRNumber = exchangePNRRepository.getAllByRequestedPNRNumber(requestedPNRNumber);
+        if(allByRequestedPNRNumber.isEmpty()){
             throw new ResourceNotFoundException("ExchangePNR data is not present with requestedPNR number "+ requestedPNRNumber);
         }
 
-        ExchangePNR exchangePNRRecord = byRequestedPNR.get();
+        //ExchangePNR exchangePNRRecord = byRequestedPNR.get();
+
+
+        Short requestedUserTrainNumber = requestedPNRRecord.getBookings().getTrainNumber();
+        Short proposedUserTrainNumber = proposedPNRRecord.getBookings().getTrainNumber();
+
+        if(! requestedUserTrainNumber.equals(proposedUserTrainNumber)){
+            throw new ExchangeNotPossibleException(" Train number should be same to exchange the seats!!!");
+        }
+
+        LocalDate requestedUserDateOfJourney = requestedPNRRecord.getBookings().getDateOfJourney();
+        LocalDate proposedUserDateOfJourney = proposedPNRRecord.getBookings().getDateOfJourney();
+
+        if (! requestedUserDateOfJourney.equals(proposedUserDateOfJourney)){
+            throw new ExchangeNotPossibleException("Date of Journey should be same to exchange the seats!!!");
+        }
+
+        String requestedUserBoardingPoint = requestedPNRRecord.getBookings().getBoardingPoint();
+        String proposedUserBoardingPoint = proposedPNRRecord.getBookings().getBoardingPoint();
+
+        if (! requestedUserBoardingPoint.equals(proposedUserBoardingPoint)){
+            throw new ExchangeNotPossibleException("Boarding point should be same to exchange the seats!!!");
+        }
+
+        String requestedUserDestination = requestedPNRRecord.getBookings().getDestination();
+        String proposedUserDestination = proposedPNRRecord.getBookings().getDestination();
+
+        if(! requestedUserDestination.equals(proposedUserDestination)){
+            throw new ExchangeNotPossibleException("Destination should be same to exchange the seats!!!");
+        }
+
+        ExchangePNR exchangePNRRecord = allByRequestedPNRNumber.get(0);
 
         if(exchangePNRRecord.getProposalPNRNumber()==null){
             if(! exchangePNRRecord.getExchangeStatus().equals("EXCHANGED")){
@@ -94,7 +129,8 @@ public class ExchangePNRService {
             }
         }
         else{
-            ExchangePNR exchangePNR = this.requestExchange(requestedPNRNumber);
+            ExchangePNR exchangePNR = new ExchangePNR();
+            exchangePNR.setRequestedPNRNumber(requestedPNRNumber);
             exchangePNR.setProposalPNRNumber(proposedPNRNumber);
             exchangePNR.setExchangeStatus("AGREED");
             return exchangePNRRepository.save(exchangePNR);
